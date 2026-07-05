@@ -69,9 +69,8 @@ async function runCron(env) {
     const toRestore = allOrders.filter(o => o.stockDeducted && !o.stockRestored && o.status !== 'Dibatalkan' && o.rentalDate);
 
     for (const order of toRestore) {
-      const acara = new Date(order.rentalDate);
-      const deadline = new Date(acara);
-      deadline.setHours(retHour, retMin ?? 0, 0, 0);
+      const datePart = order.rentalDate.split('T')[0];
+      const deadline = new Date(`${datePart}T${String(retHour).padStart(2, '0')}:${String(retMin).padStart(2, '0')}:00+07:00`);
 
       if (now >= deadline) {
         if (order.productId && order.variantId) {
@@ -90,6 +89,18 @@ async function runCron(env) {
         const updatedOrder = { ...order, stockRestored: true, status: 'Selesai', restoredAt: new Date().toISOString() };
         await query([{ sql: 'INSERT INTO orders (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [order.id, json(updatedOrder)] }]);
         console.log(`Restored stock for order #${order.id}`);
+      }
+    }
+
+    // Auto-delete pending orders older than 1 hour
+    const pendingOrders = allOrders.filter(o => o.status === 'Pending' && o.createdAt);
+    const oneHourMs = 60 * 60 * 1000;
+
+    for (const order of pendingOrders) {
+      const created = new Date(order.createdAt).getTime();
+      if (now.getTime() - created > oneHourMs) {
+        await query([{ sql: 'DELETE FROM orders WHERE id = ?', args: [order.id] }]);
+        console.log(`Auto-deleted expired pending order #${order.id}`);
       }
     }
   } catch (error) {
