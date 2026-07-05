@@ -1,0 +1,39 @@
+﻿/* Clean Reset & Normalize */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Loading Spinner Utility */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #FCFAF7;
+  color: #2D3748;
+  gap: 16px;
+}
+
+.cute-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #FFF0F2;
+  border-top: 5px solid #FFB6C1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
