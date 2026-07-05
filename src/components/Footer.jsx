@@ -156,10 +156,6 @@ const Footer = ({ settings }) => {
           <span className="footer-copyright">
             {settings.footerCopyright || '© 2025 AcrilyGrad. Semua hak dilindungi.'}
           </span>
-          <span className="footer-made-with">
-            <i className="fa-solid fa-award footer-award-icon" aria-hidden="true"></i>
-            <span>Made with ❤️ untuk wisudawan Indonesia</span>
-          </span>
         </div>
       </div>
     </footer>

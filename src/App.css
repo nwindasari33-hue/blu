@@ -3457,19 +3457,7 @@ body {
   font-size: 0.85rem;
 }
 
-.footer-made-with {
-  color: var(--dark-pink);
-  font-size: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.footer-award-icon {
-  color: var(--dark-pink);
-  font-size: 0.85rem;
-  opacity: 0.9;
-  filter: drop-shadow(0 2px 4px rgba(232, 142, 155, 0.18));
-}
+
 
 
 /* Responsive */
