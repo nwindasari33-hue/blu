@@ -18,7 +18,7 @@ const toArg = (value) => ({ type: value === null ? 'null' : Number.isInteger(val
 const toBlob = (value) => ({ type: 'text', value });
 
 async function runCron(env) {
-  const TURSO_URL = env.TURSO_DATABASE_URL;
+  const TURSO_URL = (env.TURSO_DATABASE_URL || '').replace(/^libsql:\/\//, 'https://');
   const TURSO_TOKEN = env.TURSO_AUTH_TOKEN;
 
   if (!TURSO_URL || !TURSO_TOKEN) {

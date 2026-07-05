@@ -8,7 +8,7 @@ export const config = {
   },
 };
 
-const TURSO_URL = process.env.TURSO_DATABASE_URL;
+const TURSO_URL = (process.env.TURSO_DATABASE_URL || '').replace(/^libsql:\/\//, 'https://');
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 const defaultSettings = [
