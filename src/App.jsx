@@ -16,7 +16,7 @@ import NotificationManager from './components/NotificationManager';
 import './App.css';
 import './notifications.css';
 
-const AppContent = ({ catalog, orders, customFonts, settings, isLoading, refreshData }) => {
+const AppContent = ({ catalog, orders, customFonts, settings, isLoading, refreshData, updateLocalSettings }) => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
 
@@ -211,6 +211,7 @@ function App() {
         settings={settings}
         isLoading={isLoading}
         refreshData={refreshData}
+        updateLocalSettings={updateLocalSettings}
       />
     </Router>
   );
