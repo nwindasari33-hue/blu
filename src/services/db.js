@@ -1,4 +1,4 @@
-﻿const API_ENDPOINT = '/api/db';
+const API_ENDPOINT = '/api/db';
 
 const callApi = async (action, payload = {}) => {
   const response = await fetch(API_ENDPOINT, {
@@ -60,6 +60,7 @@ export const loadAndInjectAllFonts = async () => {
 
 export const getSettings = async () => callApi('getSettings');
 export const saveSettingItem = async (key, value) => callApi('saveSettingItem', { key, value });
+export const saveSettings = async (settings) => callApi('saveSettings', { settings });
 export const useVoucher = async (code) => callApi('useVoucher', { code });
 export const getBlogs = async () => callApi('getBlogs');
 export const saveBlog = async (blog) => callApi('saveBlog', { blog });

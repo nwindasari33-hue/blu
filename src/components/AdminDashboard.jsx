@@ -208,7 +208,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('adminPassword', adminPassword);
       toast.success('Kredensial admin berhasil diperbarui!');
       setOldPassword('');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) {
       toast.error('Gagal menyimpan kredensial admin.');
     }
@@ -374,7 +374,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       setEditingProduct(null);
       setProdForm(emptyProduct());
       setIsProductFormVisible(false);
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan produk.');
@@ -402,7 +402,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
         await saveFont(fontData);
         setNewFontName('');
         toast.success('Font berhasil diupload!');
-        onRefreshData();
+        setTimeout(onRefreshData, 1500);
       } catch (err) { toast.error('Gagal upload font.'); }
       finally { setIsFontUploading(false); }
     };
@@ -514,7 +514,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       // Legacy fallback
       if (shops[0]) await saveSettingItem('shopCoords', { lat: shops[0].lat, lng: shops[0].lng });
       toast.success('Pengaturan pengiriman berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
@@ -524,18 +524,20 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
   const handleSaveGeneralSettings = async (e) => {
     e.preventDefault();
     try {
-      await saveSettingItem('shopName', shopName);
-      await saveSettingItem('catalogHeading', catalogHeading);
-      await saveSettingItem('logoImage', logoImage);
-      await saveSettingItem('faviconImage', faviconImage);
-      await saveSettingItem('waNumber', waNumber);
-      await saveSettingItem('availableSizes', availableSizes);
-      await saveSettingItem('storePolicy', storePolicy);
-      await saveSettingItem('returnTime', returnTime);
-      await saveSettingItem('storeHours', storeHours);
-      await saveSettingItem('tomtomApiKey', tomtomApiKey);
+      await saveSettings({
+        shopName,
+        catalogHeading,
+        logoImage,
+        faviconImage,
+        waNumber,
+        availableSizes,
+        storePolicy,
+        returnTime,
+        storeHours,
+        tomtomApiKey
+      });
       toast.success('Pengaturan umum berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1000); // Tunggu 1 detik agar Turso selesai replikasi sebelum fetch ulang
     } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
@@ -566,18 +568,20 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
   const handleSaveFooterSettings = async (e) => {
     e.preventDefault();
     try {
-      await saveSettingItem('footerTagline', footerTagline);
-      await saveSettingItem('footerTrustBadge1', footerTrustBadge1);
-      await saveSettingItem('footerTrustBadge2', footerTrustBadge2);
-      await saveSettingItem('footerTrustBadge3', footerTrustBadge3);
-      await saveSettingItem('footerInstagram', footerInstagram);
-      await saveSettingItem('footerTiktok', footerTiktok);
-      await saveSettingItem('footerFacebook', footerFacebook);
-      await saveSettingItem('footerCopyright', footerCopyright);
-      await saveSettingItem('footerHowToOrder', footerHowToOrder);
-      await saveSettingItem('footerContactUs', footerContactUs);
+      await saveSettings({
+        footerTagline,
+        footerTrustBadge1,
+        footerTrustBadge2,
+        footerTrustBadge3,
+        footerInstagram,
+        footerTiktok,
+        footerFacebook,
+        footerCopyright,
+        footerHowToOrder,
+        footerContactUs
+      });
       toast.success('Pengaturan footer berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1000);
     } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
@@ -588,7 +592,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('mapsGuideTabs', mapsGuideTabs);
       await saveSettingItem('mapsVideoUrl', mapsVideoUrl);
       toast.success('Panduan Maps berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) {
       toast.error('Gagal menyimpan panduan Maps.');
     }
@@ -1576,7 +1580,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('heroDesc', heroDesc);
       await saveSettingItem('heroBanners', heroBanners);
       toast.success('Pengaturan Hero & Banner berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) { toast.error('Gagal menyimpan.'); }
   };
 
@@ -1720,7 +1724,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('seoOgImage', seoOgImage);
       await saveSettingItem('seoContent', seoContent);
       toast.success('Pengaturan SEO berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) { toast.error('Gagal menyimpan pengaturan SEO.'); }
   };
 
@@ -2058,7 +2062,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
     try {
       await saveSettingItem('galleryPhotos', galleryPhotos);
       await saveSettingItem('galleryEnabled', galleryEnabled);
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
       toast.success('Galeri berhasil disimpan!');
     } catch {
       toast.error('Gagal menyimpan galeri.');
@@ -2277,7 +2281,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       setEditingFaq(null);
       setFaqForm({ question: '', answer: '' });
       toast.success('FAQ berhasil disimpan!');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) { toast.error('Gagal menyimpan FAQ.'); }
   };
 
@@ -2294,7 +2298,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('faqs', updatedFaqs);
       setFaqs(updatedFaqs);
       toast.success('FAQ dihapus.');
-      onRefreshData();
+      setTimeout(onRefreshData, 1500);
     } catch (err) { toast.error('Gagal menghapus FAQ.'); }
   };
 

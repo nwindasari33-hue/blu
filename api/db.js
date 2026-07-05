@@ -174,6 +174,15 @@ export default async function handler(req, res) {
       await query([{ sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', args: [body.key, json(body.value)] }]);
       return res.status(200).json({ key: body.key, value: body.value });
     }
+    if (action === 'saveSettings') {
+      const { settings } = body;
+      const statements = Object.entries(settings).map(([key, value]) => ({
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        args: [key, json(value)]
+      }));
+      await query(statements);
+      return res.status(200).json({ success: true });
+    }
     if (action === 'useVoucher') {
       const result = await query([{ sql: 'SELECT value FROM settings WHERE key = ?', args: ['vouchers'] }]);
       const current = readRows(result.results[0])[0]?.[0];
