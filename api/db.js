@@ -176,11 +176,14 @@ export default async function handler(req, res) {
     }
     if (action === 'saveSettings') {
       const { settings } = body;
+      if (!settings || Object.keys(settings).length === 0) {
+        return res.status(400).json({ error: 'Settings object is empty' });
+      }
       const statements = Object.entries(settings).map(([key, value]) => ({
         sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
         args: [key, json(value)]
       }));
-      await query(statements);
+      await query([{ sql: 'BEGIN TRANSACTION' }, ...statements, { sql: 'COMMIT' }]);
       return res.status(200).json({ success: true });
     }
     if (action === 'useVoucher') {

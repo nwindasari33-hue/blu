@@ -134,6 +134,7 @@ const AppContent = ({ catalog, orders, customFonts, settings, isLoading, refresh
                 customFonts={customFonts}
                 settings={settings}
                 onRefreshData={refreshData}
+                onUpdateLocalSettings={updateLocalSettings}
                 onUpdateOrderStatus={handleUpdateOrderStatus}
               />
             } 
@@ -180,6 +181,10 @@ function App() {
     } catch (err) {
       console.error('Failed to load data:', err);
     }
+  };
+
+  const updateLocalSettings = (newSettings) => {
+    setSettings(prev => ({ ...prev, ...newSettings }));
   };
 
   useEffect(() => {

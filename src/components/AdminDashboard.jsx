@@ -59,7 +59,7 @@ const STATUS_COLOR = {
 // ═════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═════════════════════════════════════════════════════════
-const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData, onUpdateOrderStatus }) => {
+const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData, onUpdateLocalSettings, onUpdateOrderStatus }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -525,18 +525,12 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
   const handleSaveGeneralSettings = async (e) => {
     e.preventDefault();
     try {
-      await saveSettings({
-        shopName,
-        catalogHeading,
-        logoImage,
-        faviconImage,
-        waNumber,
-        availableSizes,
-        storePolicy,
-        returnTime,
-        storeHours,
-        tomtomApiKey
-      });
+      const newSettings = {
+        shopName, catalogHeading, logoImage, faviconImage, waNumber,
+        availableSizes, storePolicy, returnTime, storeHours, tomtomApiKey
+      };
+      await saveSettings(newSettings);
+      if (onUpdateLocalSettings) onUpdateLocalSettings(newSettings);
       toast.success('Pengaturan umum berhasil disimpan!');
       setTimeout(onRefreshData, 1000); // Tunggu 1 detik agar Turso selesai replikasi sebelum fetch ulang
     } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
@@ -569,18 +563,13 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
   const handleSaveFooterSettings = async (e) => {
     e.preventDefault();
     try {
-      await saveSettings({
-        footerTagline,
-        footerTrustBadge1,
-        footerTrustBadge2,
-        footerTrustBadge3,
-        footerInstagram,
-        footerTiktok,
-        footerFacebook,
-        footerCopyright,
-        footerHowToOrder,
-        footerContactUs
-      });
+      const newSettings = {
+        footerTagline, footerTrustBadge1, footerTrustBadge2, footerTrustBadge3,
+        footerInstagram, footerTiktok, footerFacebook, footerCopyright,
+        footerHowToOrder, footerContactUs
+      };
+      await saveSettings(newSettings);
+      if (onUpdateLocalSettings) onUpdateLocalSettings(newSettings);
       toast.success('Pengaturan footer berhasil disimpan!');
       setTimeout(onRefreshData, 1000);
     } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }

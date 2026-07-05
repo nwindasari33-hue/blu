@@ -1,9 +1,10 @@
 const API_ENDPOINT = '/api/db';
 
 const callApi = async (action, payload = {}) => {
-  const response = await fetch(API_ENDPOINT, {
+  const url = `${API_ENDPOINT}?t=${Date.now()}`;
+  const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache, no-store, must-revalidate' },
     body: JSON.stringify({ action, ...payload }),
   });
 
