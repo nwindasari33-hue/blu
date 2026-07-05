@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ChevronLeft, Eye } from 'lucide-react';
@@ -19,7 +19,7 @@ const BlogPost = ({ settings }) => {
           setBlog(found);
           setViewCount(found.views || 0);
           incrementBlogViews(found.id)
-            .then((newViews) => setViewCount(newViews))
+            .then((newViews) => setViewCount(newViews.views || 0))
             .catch(console.error);
         }
       } catch (err) {

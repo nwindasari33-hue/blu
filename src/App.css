@@ -1,4 +1,4 @@
-﻿/* AcrilyGrad - Custom Premium Aesthetic & Cute CSS */
+/* AcrilyGrad - Custom Premium Aesthetic & Cute CSS */
 
 /* CSS Variables for Color Palette and Themes */
 :root {
@@ -3696,10 +3696,10 @@ body {
 
 /* Responsive: hide table / show cards on mobile */
 .hide-on-mobile { display: table; }
-.hide-on-desktop { display: none; }
+.hide-on-desktop { display: none !important; }
 @media (max-width: 640px) {
   .hide-on-mobile { display: none !important; }
-  .hide-on-desktop { display: block !important; }
+  .hide-on-desktop { display: flex !important; }
   .order-modal { max-width: 100%; margin: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; position: fixed; bottom: 0; left: 0; right: 0; }
   .order-modal-overlay { align-items: flex-end; padding: 0; }
   .order-modal-body { max-height: 55vh; }
