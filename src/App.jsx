@@ -11,7 +11,7 @@ import Footer from './components/Footer';
 import CustomPage from './components/CustomPage';
 import BlogList from './components/BlogList';
 import BlogPost from './components/BlogPost';
-import { getCatalog, getOrders, getFonts, getSettings, saveOrder, loadAndInjectAllFonts, adjustVariantStock } from './services/db';
+import { getCatalog, getOrders, getFonts, getSettings, saveOrder, loadAndInjectAllFonts, adjustVariantStock, initDB } from './services/db';
 import NotificationManager from './components/NotificationManager';
 import './App.css';
 import './notifications.css';
@@ -185,6 +185,7 @@ function App() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
+      try { await initDB(); } catch(e) { console.error('DB init error:', e); }
       await refreshData();
       await loadAndInjectAllFonts();
       setIsLoading(false);

@@ -1,4 +1,4 @@
-﻿import { initialCatalog } from '../src/data/initialCatalog.js';
+import { initialCatalog } from '../src/data/initialCatalog.js';
 
 const TURSO_URL = process.env.TURSO_DATABASE_URL;
 const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
@@ -98,9 +98,10 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const { action } = body;
 
-    await init();
-
-    if (action === 'init') return res.status(200).json({ ok: true });
+    if (action === 'init') {
+      await init();
+      return res.status(200).json({ ok: true });
+    }
 
     if (action === 'getCatalog') {
       const result = await query([{ sql: 'SELECT data FROM catalog ORDER BY id' }]);
