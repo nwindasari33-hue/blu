@@ -515,7 +515,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       if (shops[0]) await saveSettingItem('shopCoords', { lat: shops[0].lat, lng: shops[0].lng });
       toast.success('Pengaturan pengiriman berhasil disimpan!');
       onRefreshData();
-    } catch (err) { toast.error('Gagal menyimpan.'); }
+    } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
   // ─────────────────────────────────────────────────────
@@ -536,7 +536,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('tomtomApiKey', tomtomApiKey);
       toast.success('Pengaturan umum berhasil disimpan!');
       onRefreshData();
-    } catch (err) { toast.error('Gagal menyimpan.'); }
+    } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
   const handleLogoUpload = (e) => {
@@ -578,7 +578,7 @@ const AdminDashboard = ({ catalog, orders, customFonts, settings, onRefreshData,
       await saveSettingItem('footerContactUs', footerContactUs);
       toast.success('Pengaturan footer berhasil disimpan!');
       onRefreshData();
-    } catch (err) { toast.error('Gagal menyimpan.'); }
+    } catch (err) { toast.error('Gagal menyimpan: ' + err.message); }
   };
 
   // ── MAPS GUIDE HANDLERS ──────────────────────────────
