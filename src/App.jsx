@@ -37,7 +37,7 @@ const AppContent = ({ catalog, orders, customFonts, settings, isLoading, refresh
     return (
       <div className="loading-screen">
         <div className="cute-spinner"></div>
-        <p>Memuat AcrilyGrad...</p>
+        <p>Loading...</p>
       </div>
     );
   }
