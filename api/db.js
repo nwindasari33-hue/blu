@@ -1,4 +1,4 @@
-import { initialCatalog } from '../src/data/initialCatalog.js';
+import { createClient } from '@supabase/supabase-js';
 
 export const config = {
   api: {
@@ -8,95 +8,15 @@ export const config = {
   },
 };
 
-const TURSO_URL = (process.env.TURSO_DATABASE_URL || '').replace(/^libsql:\/\//, 'https://');
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
+// Gunakan anon key dari env atau fallback ke string yang diberikan user
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://eijduhejrzpucwgfhcve.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpamR1aGVqcnpwdWN3Z2ZoY3ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNjMxMjksImV4cCI6MjA5ODgzOTEyOX0.9F5vl5vp6Ec20hELZkSebUrfRmhqQXEjhGVCEgsdNNw';
 
-const defaultSettings = [
-  { key: 'adminUsername', value: 'admin' },
-  { key: 'adminPassword', value: 'admin123' },
-  { key: 'shops', value: [
-    { id: 1, name: 'Toko Utama', address: 'Jl. Malioboro No. 12, Gedong Tengen, Kota Yogyakarta', lat: -7.792480, lng: 110.365655 },
-    { id: 2, name: 'Toko Cabang', address: 'Jl. Kaliurang Km. 5, Sleman, DI Yogyakarta', lat: -7.762690, lng: 110.381690 },
-  ]},
-  { key: 'shippingBaseFee', value: 5000 },
-  { key: 'shippingRatePerKm', value: 3000 },
-  { key: 'shippingZones', value: [
-    { id: 'zone-1', name: 'Dalam Kota', radiusStart: 0, radiusEnd: 5, type: 'per_km', rate: 2000 },
-    { id: 'zone-2', name: 'Pinggiran Kota', radiusStart: 5, radiusEnd: 15, type: 'per_km', rate: 4000 },
-    { id: 'zone-3', name: 'Luar Kota', radiusStart: 15, radiusEnd: 999, type: 'per_km', rate: 6000 },
-  ]},
-  { key: 'shippingAreas', value: [
-    { id: 'area-1', name: 'Bondowoso', keyword: 'Bondowoso', flatRate: 5000 },
-  ]},
-  { key: 'shopName', value: 'AcrilyGrad' },
-  { key: 'waNumber', value: '6281234567890' },
-  { key: 'availableSizes', value: 'A1 (59.4 x 84.1 cm), A2 (42 x 59.4 cm), A3 (29.7 x 42 cm)' },
-  { key: 'storePolicy', value: 'Papan harus dikembalikan maksimal pukul 16.00 WIB di hari yang sama.' },
-  { key: 'storeHours', value: 'Senin - Sabtu: 08.00 - 17.00 WIB' },
-  { key: 'tomtomApiKey', value: 'ZGivQglmFeXV1B9a4ZcWOrkcikjY3HqD' },
-  { key: 'footerTagline', value: 'Hadirkan momen wisuda yang tak terlupakan dengan sentuhan elegan.' },
-  { key: 'footerTrustBadge1', value: '500+ Wisudawan Puas' },
-  { key: 'footerTrustBadge2', value: 'Pengiriman Tepat Waktu' },
-  { key: 'footerTrustBadge3', value: 'Kualitas Premium Terjamin' },
-  { key: 'footerInstagram', value: '' },
-  { key: 'footerTiktok', value: '' },
-  { key: 'footerFacebook', value: '' },
-  { key: 'footerCopyright', value: '© 2025 AcrilyGrad. Semua hak dilindungi.' },
-];
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const json = (value) => JSON.stringify(value ?? null);
 const parse = (value) => {
   try { return JSON.parse(value); } catch { return value; }
-};
-const toArg = (value) => ({ type: value === null ? 'null' : Number.isInteger(value) ? 'integer' : typeof value === 'number' ? 'float' : 'text', value: String(value) });
-const toBlob = (value) => ({ type: 'text', value });
-
-const query = async (statements) => {
-  if (!TURSO_URL || !TURSO_TOKEN) {
-    throw new Error('TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN wajib di-set');
-  }
-
-  const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${TURSO_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      requests: [
-        ...statements.map((statement) => ({
-          type: 'execute',
-          stmt: statement.args
-            ? { sql: statement.sql, args: statement.args.map((arg) => toBlob(arg)) }
-            : { sql: statement.sql },
-        })),
-        { type: 'close' },
-      ],
-    }),
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.results?.some((result) => result.error)) {
-    const rawError = data?.results?.find((result) => result.error)?.error || data?.error || data?.message || data || 'Turso query failed';
-    const errorMsg = typeof rawError === 'object' ? JSON.stringify(rawError) : rawError;
-    throw new Error(errorMsg);
-  }
-
-  return data;
-};
-
-const readRows = (result) => (result?.response?.result?.rows || []).map((row) => row.map(parse));
-
-const init = async () => {
-  await query([
-    { sql: 'CREATE TABLE IF NOT EXISTS catalog (id TEXT PRIMARY KEY, data TEXT NOT NULL)' },
-    { sql: 'CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, data TEXT NOT NULL)' },
-    { sql: 'CREATE TABLE IF NOT EXISTS fonts (id TEXT PRIMARY KEY, data TEXT NOT NULL)' },
-    { sql: 'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)' },
-    { sql: 'CREATE TABLE IF NOT EXISTS blogs (id TEXT PRIMARY KEY, data TEXT NOT NULL)' },
-    ...initialCatalog.map((item) => ({ sql: 'INSERT OR IGNORE INTO catalog (id, data) VALUES (?, ?)', args: [item.id, json(item)] })),
-    ...defaultSettings.map((item) => ({ sql: 'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', args: [item.key, json(item.value)] })),
-  ]);
 };
 
 export default async function handler(req, res) {
@@ -109,89 +29,94 @@ export default async function handler(req, res) {
     const { action } = body;
 
     if (action === 'init') {
-      await init();
       return res.status(200).json({ ok: true });
     }
 
+    // ==========================================
+    // CATALOG
+    // ==========================================
     if (action === 'getCatalog') {
-      const result = await query([{ sql: 'SELECT data FROM catalog ORDER BY id' }]);
-      return res.status(200).json(readRows(result.results[0]).map(([data]) => parse(data)));
+      const { data, error } = await supabase.from('catalog').select('data').order('id', { ascending: true });
+      if (error) throw error;
+      return res.status(200).json(data.map((row) => parse(row.data)));
     }
     if (action === 'saveCatalogItem') {
       const { item } = body;
-      await query([
-        { sql: 'BEGIN TRANSACTION' },
-        { sql: 'DELETE FROM catalog WHERE id = ?', args: [item.id] },
-        { sql: 'INSERT INTO catalog (id, data) VALUES (?, ?)', args: [item.id, json(item)] },
-        { sql: 'COMMIT' }
-      ]);
+      const { error } = await supabase.from('catalog').upsert({ id: String(item.id), data: json(item) });
+      if (error) throw error;
       return res.status(200).json(item);
     }
     if (action === 'deleteCatalogItem') {
-      await query([{ sql: 'DELETE FROM catalog WHERE id = ?', args: [body.id] }]);
-      return res.status(200).json({ id: body.id });
-    }
-
-    if (action === 'getOrders') {
-      const result = await query([{ sql: 'SELECT data FROM orders ORDER BY id DESC' }]);
-      return res.status(200).json(readRows(result.results[0]).map(([data]) => parse(data)));
-    }
-    if (action === 'saveOrder') {
-      const { order } = body;
-      await query([
-        { sql: 'BEGIN TRANSACTION' },
-        { sql: 'DELETE FROM orders WHERE id = ?', args: [order.id] },
-        { sql: 'INSERT INTO orders (id, data) VALUES (?, ?)', args: [order.id, json(order)] },
-        { sql: 'COMMIT' }
-      ]);
-      return res.status(200).json(order);
-    }
-    if (action === 'deleteOrder') {
-      await query([{ sql: 'DELETE FROM orders WHERE id = ?', args: [body.id] }]);
+      const { error } = await supabase.from('catalog').delete().eq('id', String(body.id));
+      if (error) throw error;
       return res.status(200).json({ id: body.id });
     }
     if (action === 'adjustVariantStock') {
-      const result = await query([{ sql: 'SELECT data FROM catalog WHERE id = ?', args: [body.productId] }]);
-      const current = readRows(result.results[0])[0]?.[0];
-      if (!current) return res.status(404).json({ error: 'Product not found' });
-      const product = parse(current);
-      const variant = product.variants?.find((entry) => entry.id === body.variantId);
+      const { data: currentData, error: fetchError } = await supabase.from('catalog').select('data').eq('id', String(body.productId)).maybeSingle();
+      if (fetchError) throw fetchError;
+      if (!currentData) return res.status(404).json({ error: 'Product not found' });
+      
+      const product = parse(currentData.data);
+      const variant = product.variants?.find((entry) => String(entry.id) === String(body.variantId));
       if (!variant) return res.status(404).json({ error: 'Variant not found' });
+      
       variant.stock = Math.max(0, (variant.stock || 0) + Number(body.delta || 0));
-      await query([{ sql: 'UPDATE catalog SET data = ? WHERE id = ?', args: [json(product), body.productId] }]);
+      const { error: updateError } = await supabase.from('catalog').update({ data: json(product) }).eq('id', String(body.productId));
+      if (updateError) throw updateError;
       return res.status(200).json(product);
     }
 
-    if (action === 'getFonts') {
-      const result = await query([{ sql: 'SELECT data FROM fonts ORDER BY id' }]);
-      return res.status(200).json(readRows(result.results[0]).map(([data]) => parse(data)));
+    // ==========================================
+    // ORDERS
+    // ==========================================
+    if (action === 'getOrders') {
+      const { data, error } = await supabase.from('orders').select('data').order('id', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json(data.map((row) => parse(row.data)));
     }
-    if (action === 'saveFont') {
-      const { font } = body;
-      await query([
-        { sql: 'BEGIN TRANSACTION' },
-        { sql: 'DELETE FROM fonts WHERE id = ?', args: [font.id] },
-        { sql: 'INSERT INTO fonts (id, data) VALUES (?, ?)', args: [font.id, json(font)] },
-        { sql: 'COMMIT' }
-      ]);
-      return res.status(200).json(font);
+    if (action === 'saveOrder') {
+      const { order } = body;
+      const { error } = await supabase.from('orders').upsert({ id: String(order.id), data: json(order) });
+      if (error) throw error;
+      return res.status(200).json(order);
     }
-    if (action === 'deleteFont') {
-      await query([{ sql: 'DELETE FROM fonts WHERE id = ?', args: [body.id] }]);
+    if (action === 'deleteOrder') {
+      const { error } = await supabase.from('orders').delete().eq('id', String(body.id));
+      if (error) throw error;
       return res.status(200).json({ id: body.id });
     }
 
+    // ==========================================
+    // FONTS
+    // ==========================================
+    if (action === 'getFonts') {
+      const { data, error } = await supabase.from('fonts').select('data').order('id', { ascending: true });
+      if (error) throw error;
+      return res.status(200).json(data.map((row) => parse(row.data)));
+    }
+    if (action === 'saveFont') {
+      const { font } = body;
+      const { error } = await supabase.from('fonts').upsert({ id: String(font.id), data: json(font) });
+      if (error) throw error;
+      return res.status(200).json(font);
+    }
+    if (action === 'deleteFont') {
+      const { error } = await supabase.from('fonts').delete().eq('id', String(body.id));
+      if (error) throw error;
+      return res.status(200).json({ id: body.id });
+    }
+
+    // ==========================================
+    // SETTINGS
+    // ==========================================
     if (action === 'getSettings') {
-      const result = await query([{ sql: 'SELECT key, value FROM settings' }]);
-      return res.status(200).json(Object.fromEntries(readRows(result.results[0]).map(([key, value]) => [key, parse(value)])));
+      const { data, error } = await supabase.from('settings').select('key, value');
+      if (error) throw error;
+      return res.status(200).json(Object.fromEntries(data.map((row) => [row.key, parse(row.value)])));
     }
     if (action === 'saveSettingItem') {
-      await query([
-        { sql: 'BEGIN TRANSACTION' },
-        { sql: 'DELETE FROM settings WHERE key = ?', args: [body.key] },
-        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: [body.key, json(body.value)] },
-        { sql: 'COMMIT' }
-      ]);
+      const { error } = await supabase.from('settings').upsert({ key: String(body.key), value: json(body.value) });
+      if (error) throw error;
       return res.status(200).json({ key: body.key, value: body.value });
     }
     if (action === 'saveSettings') {
@@ -199,17 +124,19 @@ export default async function handler(req, res) {
       if (!settings || Object.keys(settings).length === 0) {
         return res.status(400).json({ error: 'Settings object is empty' });
       }
-      const statements = Object.entries(settings).flatMap(([key, value]) => [
-        { sql: 'DELETE FROM settings WHERE key = ?', args: [key] },
-        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: [key, json(value)] }
-      ]);
-      await query([{ sql: 'BEGIN TRANSACTION' }, ...statements, { sql: 'COMMIT' }]);
+      
+      const upserts = Object.entries(settings).map(([key, value]) => ({
+        key: String(key),
+        value: json(value)
+      }));
+      
+      const { error } = await supabase.from('settings').upsert(upserts);
+      if (error) throw error;
       return res.status(200).json({ success: true });
     }
     if (action === 'useVoucher') {
-      const result = await query([{ sql: 'SELECT value FROM settings WHERE key = ?', args: ['vouchers'] }]);
-      const current = readRows(result.results[0])[0]?.[0];
-      const vouchers = current ? parse(current) : [];
+      const { data, error: fetchError } = await supabase.from('settings').select('value').eq('key', 'vouchers').maybeSingle();
+      const vouchers = data ? parse(data.value) : [];
       let updated = false;
       const next = vouchers.map((voucher) => {
         if (voucher.code?.toUpperCase() === body.code?.toUpperCase() && voucher.quota > 0) {
@@ -219,46 +146,46 @@ export default async function handler(req, res) {
         return voucher;
       });
       if (updated) {
-        await query([
-          { sql: 'BEGIN TRANSACTION' },
-          { sql: 'DELETE FROM settings WHERE key = ?', args: ['vouchers'] },
-          { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: ['vouchers', json(next)] },
-          { sql: 'COMMIT' }
-        ]);
+        const { error: updateError } = await supabase.from('settings').upsert({ key: 'vouchers', value: json(next) });
+        if (updateError) throw updateError;
       }
       return res.status(200).json({ updated });
     }
 
+    // ==========================================
+    // BLOGS
+    // ==========================================
     if (action === 'getBlogs') {
-      const result = await query([{ sql: 'SELECT data FROM blogs ORDER BY id DESC' }]);
-      return res.status(200).json(readRows(result.results[0]).map(([data]) => parse(data)));
+      const { data, error } = await supabase.from('blogs').select('data').order('id', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json(data.map((row) => parse(row.data)));
     }
     if (action === 'saveBlog') {
       const { blog } = body;
-      await query([
-        { sql: 'BEGIN TRANSACTION' },
-        { sql: 'DELETE FROM blogs WHERE id = ?', args: [blog.id] },
-        { sql: 'INSERT INTO blogs (id, data) VALUES (?, ?)', args: [blog.id, json(blog)] },
-        { sql: 'COMMIT' }
-      ]);
+      const { error } = await supabase.from('blogs').upsert({ id: String(blog.id), data: json(blog) });
+      if (error) throw error;
       return res.status(200).json(blog);
     }
     if (action === 'deleteBlog') {
-      await query([{ sql: 'DELETE FROM blogs WHERE id = ?', args: [body.id] }]);
+      const { error } = await supabase.from('blogs').delete().eq('id', String(body.id));
+      if (error) throw error;
       return res.status(200).json({ id: body.id });
     }
     if (action === 'incrementBlogViews') {
-      const result = await query([{ sql: 'SELECT data FROM blogs WHERE id = ?', args: [body.id] }]);
-      const current = readRows(result.results[0])[0]?.[0];
-      if (!current) return res.status(200).json({ views: 0 });
-      const blog = parse(current);
+      const { data: currentData, error: fetchError } = await supabase.from('blogs').select('data').eq('id', String(body.id)).maybeSingle();
+      if (fetchError || !currentData) return res.status(200).json({ views: 0 });
+      
+      const blog = parse(currentData.data);
       blog.views = (blog.views || 0) + 1;
-      await query([{ sql: 'UPDATE blogs SET data = ? WHERE id = ?', args: [json(blog), body.id] }]);
+      
+      const { error: updateError } = await supabase.from('blogs').update({ data: json(blog) }).eq('id', String(body.id));
+      if (updateError) throw updateError;
       return res.status(200).json({ views: blog.views });
     }
 
     return res.status(400).json({ error: 'Unknown action' });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error('Supabase Error:', error);
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }
