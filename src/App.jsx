@@ -193,48 +193,7 @@ function App() {
     init();
   }, []);
 
-  // ── Catch-up: restore stock for orders whose returnTime has passed ──
-  useEffect(() => {
-    const catchUp = async () => {
-      try {
-        const [allOrders, dbSettings] = await Promise.all([getOrders(), getSettings()]);
-        const returnTime = dbSettings?.returnTime || '16.00';
-        const [retHour, retMin] = returnTime.replace('.', ':').split(':').map(Number);
-        const now = new Date();
 
-        const toRestore = allOrders.filter(o =>
-          o.stockDeducted && !o.stockRestored &&
-          o.status !== 'Dibatalkan' &&
-          o.rentalDate
-        );
-
-        for (const order of toRestore) {
-          // returnDeadline = rentalDate date part + returnTime
-          const acara = new Date(order.rentalDate);
-          const deadline = new Date(acara);
-          deadline.setHours(retHour, retMin ?? 0, 0, 0);
-
-          if (now >= deadline) {
-            // Restore stock
-            if (order.productId && order.variantId) {
-              await adjustVariantStock(order.productId, order.variantId, +1);
-            }
-            await saveOrder({ ...order, stockRestored: true, status: 'Selesai', restoredAt: new Date().toISOString() });
-            console.info(`[StockRestore] Restored stock for order #${order.id}`);
-          }
-        }
-
-        if (toRestore.length > 0) refreshData();
-      } catch (err) {
-        console.error('[StockRestore] catch-up error:', err);
-      }
-    };
-
-    catchUp(); // run immediately on app open
-    // ponytail: also runs every 5 min while tab is open; upgrade to Cloud Function when on Firebase
-    const interval = setInterval(catchUp, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
 
   return (
