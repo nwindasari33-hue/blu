@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { saveOrder, useVoucher } from '../services/db';
+import { saveOrder, useVoucher as applyVoucherToDb } from '../services/db';
 import { toast } from '../utils/toast';
 import { parseLocationQuery } from '../utils/locationParser';
 import { MapPin, Calendar, Clock, ChevronLeft, Search } from 'lucide-react';
@@ -65,7 +65,7 @@ const BookingForm = ({ catalog, shops, shippingBaseFee, shippingRatePerKm, shipp
     ? product.variants 
     : [{ id: 'default', size: product.size, price: product.price, discountPrice: product.discountPrice, stock: product.stock }]) : [];
 
-  const currentVariant = prodVariants.find(v => v.id === selectedVid) || prodVariants[0];
+  const currentVariant = prodVariants.find(v => v.id === selectedVid) || prodVariants[0] || {};
 
   const [rentalDate, setRentalDate] = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -92,14 +92,7 @@ const BookingForm = ({ catalog, shops, shippingBaseFee, shippingRatePerKm, shipp
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherError, setVoucherError] = useState('');
 
-  if (!product) {
-    return (
-      <div className="booking-page animate-fade-in" style={{ textAlign: 'center', paddingTop: '100px' }}>
-        <h2>Produk tidak ditemukan</h2>
-        <Link to="/" className="btn-secondary mt-3">Kembali ke Katalog</Link>
-      </div>
-    );
-  }
+
 
   const basePrice = currentVariant.discountPrice || currentVariant.price;
   const shippingFee = computeShipping(distance, address, shippingBaseFee, shippingRatePerKm, shippingZones, shippingAreas, freeShippingEnabled, freeShippingAreas);
@@ -219,6 +212,15 @@ const BookingForm = ({ catalog, shops, shippingBaseFee, shippingRatePerKm, shipp
 
     return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
   }, []);
+
+  if (!product) {
+    return (
+      <div className="booking-page animate-fade-in" style={{ textAlign: 'center', paddingTop: '100px' }}>
+        <h2>Produk tidak ditemukan</h2>
+        <Link to="/" className="btn-secondary mt-3">Kembali ke Katalog</Link>
+      </div>
+    );
+  }
 
   // ─── Search location & Autocomplete ─────────────────────
   const handleQueryChange = (e) => {
@@ -462,7 +464,7 @@ const BookingForm = ({ catalog, shops, shippingBaseFee, shippingRatePerKm, shipp
     if (!address) { toast.warning('Pilih lokasi pengiriman di peta.'); return; }
 
     if (appliedVoucher) {
-      await useVoucher(appliedVoucher.code);
+      await applyVoucherToDb(appliedVoucher.code);
     }
 
     const orderCode = generateOrderCode();
