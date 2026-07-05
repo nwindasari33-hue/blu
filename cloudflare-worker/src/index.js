@@ -14,58 +14,41 @@ export default {
 
 const json = (value) => JSON.stringify(value ?? null);
 const parse = (value) => { try { return JSON.parse(value); } catch { return value; } };
-const toArg = (value) => ({ type: value === null ? 'null' : Number.isInteger(value) ? 'integer' : typeof value === 'number' ? 'float' : 'text', value: String(value) });
-const toBlob = (value) => ({ type: 'text', value });
 
 async function runCron(env) {
-  const TURSO_URL = (env.TURSO_DATABASE_URL || '').replace(/^libsql:\/\//, 'https://');
-  const TURSO_TOKEN = env.TURSO_AUTH_TOKEN;
+  const SUPABASE_URL = env.SUPABASE_URL;
+  const SUPABASE_KEY = env.SUPABASE_KEY;
 
-  if (!TURSO_URL || !TURSO_TOKEN) {
-    console.error('TURSO_DATABASE_URL or TURSO_AUTH_TOKEN missing in Cloudflare env');
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('SUPABASE_URL or SUPABASE_KEY missing in Cloudflare env');
     return;
   }
 
-  const query = async (statements) => {
-    const response = await fetch(`${TURSO_URL}/v2/pipeline`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${TURSO_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        requests: [
-          ...statements.map((statement) => ({
-            type: 'execute',
-            stmt: statement.args
-              ? { sql: statement.sql, args: statement.args.map((arg) => toBlob(arg)) }
-              : { sql: statement.sql },
-          })),
-          { type: 'close' },
-        ],
-      }),
-    });
-    
-    const data = await response.json();
-    if (!response.ok || data?.results?.some((result) => result.error)) {
-      throw new Error(data?.results?.find((result) => result.error)?.error || data?.error || 'Turso query failed');
-    }
-    return data;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
   };
 
-  const readRows = (result) => (result?.response?.result?.rows || []).map((row) => row.map(parse));
-
   try {
-    const ordersRes = await query([{ sql: 'SELECT data FROM orders ORDER BY id DESC' }]);
-    const allOrders = readRows(ordersRes.results[0]).map(([data]) => parse(data));
+    // 1. Fetch Orders
+    const ordersRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=data`, { headers });
+    if (!ordersRes.ok) throw new Error('Failed to fetch orders');
+    const ordersData = await ordersRes.json();
+    const allOrders = ordersData.map(row => parse(row.data));
 
-    const settingsRes = await query([{ sql: 'SELECT key, value FROM settings' }]);
-    const dbSettings = Object.fromEntries(readRows(settingsRes.results[0]).map(([key, value]) => [key, parse(value)]));
+    // 2. Fetch Settings
+    const settingsRes = await fetch(`${SUPABASE_URL}/rest/v1/settings?select=key,value`, { headers });
+    if (!settingsRes.ok) throw new Error('Failed to fetch settings');
+    const settingsData = await settingsRes.json();
+    const dbSettings = Object.fromEntries(settingsData.map(row => [row.key, parse(row.value)]));
 
     const returnTime = dbSettings?.returnTime || '16.00';
     const [retHour, retMin] = returnTime.replace('.', ':').split(':').map(Number);
     const now = new Date();
 
+    // 3. Restore Stock for Expired Rentals
     const toRestore = allOrders.filter(o => o.stockDeducted && !o.stockRestored && o.status !== 'Dibatalkan' && o.rentalDate);
 
     for (const order of toRestore) {
@@ -74,32 +57,49 @@ async function runCron(env) {
 
       if (now >= deadline) {
         if (order.productId && order.variantId) {
-          const productRes = await query([{ sql: 'SELECT data FROM catalog WHERE id = ?', args: [order.productId] }]);
-          const currentProduct = readRows(productRes.results[0])[0]?.[0];
-          if (currentProduct) {
-            const product = parse(currentProduct);
-            const variant = product.variants?.find((entry) => entry.id === order.variantId);
-            if (variant) {
-              variant.stock = Math.max(0, (variant.stock || 0) + 1);
-              await query([{ sql: 'UPDATE catalog SET data = ? WHERE id = ?', args: [json(product), order.productId] }]);
+          // Fetch product
+          const productRes = await fetch(`${SUPABASE_URL}/rest/v1/catalog?id=eq.${order.productId}&select=data`, { headers });
+          if (productRes.ok) {
+            const productRows = await productRes.json();
+            if (productRows.length > 0) {
+              const product = parse(productRows[0].data);
+              const variant = product.variants?.find((entry) => entry.id === order.variantId);
+              if (variant) {
+                variant.stock = Math.max(0, (variant.stock || 0) + 1);
+                
+                // Update catalog
+                await fetch(`${SUPABASE_URL}/rest/v1/catalog?id=eq.${order.productId}`, {
+                  method: 'PATCH',
+                  headers,
+                  body: JSON.stringify({ data: json(product) })
+                });
+              }
             }
           }
         }
         
+        // Mark order as completed and stock restored
         const updatedOrder = { ...order, stockRestored: true, status: 'Selesai', restoredAt: new Date().toISOString() };
-        await query([{ sql: 'INSERT INTO orders (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [order.id, json(updatedOrder)] }]);
+        await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ data: json(updatedOrder) })
+        });
         console.log(`Restored stock for order #${order.id}`);
       }
     }
 
-    // Auto-delete pending orders older than 1 hour
+    // 4. Auto-delete pending orders older than 1 hour
     const pendingOrders = allOrders.filter(o => o.status === 'Pending' && o.createdAt);
     const oneHourMs = 60 * 60 * 1000;
 
     for (const order of pendingOrders) {
       const created = new Date(order.createdAt).getTime();
       if (now.getTime() - created > oneHourMs) {
-        await query([{ sql: 'DELETE FROM orders WHERE id = ?', args: [order.id] }]);
+        await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+          method: 'DELETE',
+          headers
+        });
         console.log(`Auto-deleted expired pending order #${order.id}`);
       }
     }
