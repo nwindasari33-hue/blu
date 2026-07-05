@@ -8,7 +8,8 @@ import {
   saveSettingItem,
   saveOrder,
   deleteOrder,
-  adjustVariantStock
+  adjustVariantStock,
+  saveSettings
 } from '../services/db';
 import { toast, confirmDialog } from '../utils/toast';
 import { parseLocationQuery } from '../utils/locationParser';
