@@ -119,7 +119,12 @@ export default async function handler(req, res) {
     }
     if (action === 'saveCatalogItem') {
       const { item } = body;
-      await query([{ sql: 'INSERT INTO catalog (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [item.id, json(item)] }]);
+      await query([
+        { sql: 'BEGIN TRANSACTION' },
+        { sql: 'DELETE FROM catalog WHERE id = ?', args: [item.id] },
+        { sql: 'INSERT INTO catalog (id, data) VALUES (?, ?)', args: [item.id, json(item)] },
+        { sql: 'COMMIT' }
+      ]);
       return res.status(200).json(item);
     }
     if (action === 'deleteCatalogItem') {
@@ -133,7 +138,12 @@ export default async function handler(req, res) {
     }
     if (action === 'saveOrder') {
       const { order } = body;
-      await query([{ sql: 'INSERT INTO orders (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [order.id, json(order)] }]);
+      await query([
+        { sql: 'BEGIN TRANSACTION' },
+        { sql: 'DELETE FROM orders WHERE id = ?', args: [order.id] },
+        { sql: 'INSERT INTO orders (id, data) VALUES (?, ?)', args: [order.id, json(order)] },
+        { sql: 'COMMIT' }
+      ]);
       return res.status(200).json(order);
     }
     if (action === 'deleteOrder') {
@@ -158,7 +168,12 @@ export default async function handler(req, res) {
     }
     if (action === 'saveFont') {
       const { font } = body;
-      await query([{ sql: 'INSERT INTO fonts (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [font.id, json(font)] }]);
+      await query([
+        { sql: 'BEGIN TRANSACTION' },
+        { sql: 'DELETE FROM fonts WHERE id = ?', args: [font.id] },
+        { sql: 'INSERT INTO fonts (id, data) VALUES (?, ?)', args: [font.id, json(font)] },
+        { sql: 'COMMIT' }
+      ]);
       return res.status(200).json(font);
     }
     if (action === 'deleteFont') {
@@ -171,7 +186,12 @@ export default async function handler(req, res) {
       return res.status(200).json(Object.fromEntries(readRows(result.results[0]).map(([key, value]) => [key, parse(value)])));
     }
     if (action === 'saveSettingItem') {
-      await query([{ sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', args: [body.key, json(body.value)] }]);
+      await query([
+        { sql: 'BEGIN TRANSACTION' },
+        { sql: 'DELETE FROM settings WHERE key = ?', args: [body.key] },
+        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: [body.key, json(body.value)] },
+        { sql: 'COMMIT' }
+      ]);
       return res.status(200).json({ key: body.key, value: body.value });
     }
     if (action === 'saveSettings') {
@@ -179,10 +199,10 @@ export default async function handler(req, res) {
       if (!settings || Object.keys(settings).length === 0) {
         return res.status(400).json({ error: 'Settings object is empty' });
       }
-      const statements = Object.entries(settings).map(([key, value]) => ({
-        sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-        args: [key, json(value)]
-      }));
+      const statements = Object.entries(settings).flatMap(([key, value]) => [
+        { sql: 'DELETE FROM settings WHERE key = ?', args: [key] },
+        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: [key, json(value)] }
+      ]);
       await query([{ sql: 'BEGIN TRANSACTION' }, ...statements, { sql: 'COMMIT' }]);
       return res.status(200).json({ success: true });
     }
@@ -199,7 +219,12 @@ export default async function handler(req, res) {
         return voucher;
       });
       if (updated) {
-        await query([{ sql: 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', args: ['vouchers', json(next)] }]);
+        await query([
+          { sql: 'BEGIN TRANSACTION' },
+          { sql: 'DELETE FROM settings WHERE key = ?', args: ['vouchers'] },
+          { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', args: ['vouchers', json(next)] },
+          { sql: 'COMMIT' }
+        ]);
       }
       return res.status(200).json({ updated });
     }
@@ -210,7 +235,12 @@ export default async function handler(req, res) {
     }
     if (action === 'saveBlog') {
       const { blog } = body;
-      await query([{ sql: 'INSERT INTO blogs (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data', args: [blog.id, json(blog)] }]);
+      await query([
+        { sql: 'BEGIN TRANSACTION' },
+        { sql: 'DELETE FROM blogs WHERE id = ?', args: [blog.id] },
+        { sql: 'INSERT INTO blogs (id, data) VALUES (?, ?)', args: [blog.id, json(blog)] },
+        { sql: 'COMMIT' }
+      ]);
       return res.status(200).json(blog);
     }
     if (action === 'deleteBlog') {
