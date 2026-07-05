@@ -75,9 +75,11 @@ const query = async (statements) => {
     }),
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.results?.some((result) => result.error)) {
-    throw new Error(data?.results?.find((result) => result.error)?.error || data?.error || 'Turso query failed');
+    const rawError = data?.results?.find((result) => result.error)?.error || data?.error || data?.message || data || 'Turso query failed';
+    const errorMsg = typeof rawError === 'object' ? JSON.stringify(rawError) : rawError;
+    throw new Error(errorMsg);
   }
 
   return data;
